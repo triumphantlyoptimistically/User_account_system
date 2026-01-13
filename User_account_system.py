@@ -1,62 +1,73 @@
-﻿import os
+import os
+
+
+def Print_Header(title):
+    print("\n" + "=" * 30)
+    print(title)
+    print("=" * 30)
+
+
+def Print_Separator():
+    print("-" * 30)
+
+
+def Print_Error(message):
+    print(f"\nERROR: {message}\n")
 
 
 def Display_Menu():
-    print("\n" + "=" * 24)
-    print("User Account System")
-    print("=" * 24)
+    Print_Header("User Account System")
     print("1. Register")
     print("2. Login")
     print("3. Exit")
-    print("-" * 24)
+    Print_Separator()
 
 
 def Display_Task_Menu(current_user):
-    print("\n" + "=" * 24)
-    print(f"Task Manager ({current_user})")
-    print("=" * 24)
+    Print_Header(f"Task Manager ({current_user})")
     print("1. Add task")
     print("2. View my tasks")
     print("3. Mark task as complete")
     print("4. Logout")
-    print("-" * 24)
+    Print_Separator()
 
 
 def Get_Option(min_option, max_option):
     while True:
+        choice = input(f"Enter an option ({min_option}-{max_option}): ").strip()
+        if not choice:
+            Print_Error(f"Please enter a number between {min_option} and {max_option}.")
+            continue
+
         try:
-            option = int(input(f"Enter an option ({min_option}-{max_option}): "))
+            option = int(choice)
         except ValueError:
-            print(f"Enter an option between {min_option} and {max_option}\n")
+            Print_Error(f"Invalid input. Enter a number between {min_option} and {max_option}.")
             continue
 
         if option < min_option or option > max_option:
-            print(f"Enter an option between {min_option} and {max_option}\n")
+            Print_Error(f"Invalid option. Choose a number between {min_option} and {max_option}.")
             continue
 
         return option
 
 
 def Get_Username():
-    empty = True
-    while empty:
-        username = input("Enter username: ")
+    while True:
+        username = input("Enter username: ").strip()
         if not username:
-            print("Please enter a valid username\n")
-        else:
-            empty = False
-            return username
+            Print_Error("Username cannot be empty.")
+            continue
+        return username
 
 
 def Get_Password():
-    empty = True
-    while empty:
-        password = input("Enter password: ")
+    while True:
+        password = input("Enter password: ").strip()
         if not password:
-            print("Please enter a valid password\n")
-        else:
-            empty = False
-            return password
+            Print_Error("Password cannot be empty.")
+            continue
+        return password
 
 
 def Ensure_File_Exists(filename):
@@ -65,11 +76,11 @@ def Ensure_File_Exists(filename):
             pass
 
 
-def Encode_Field(value):
+def Space_To_Underscore(value):
     return value.strip().replace(" ", "_")
 
 
-def Decode_Field(value):
+def Underscore_To_Space(value):
     return value.replace("_", " ")
 
 
@@ -84,18 +95,16 @@ def Load_Tasks():
                 continue
 
             parts = line.split(" ")
-            if len(parts) != 4:
+            if len(parts) != 3:
                 continue
 
             owner = parts[0]
-            title = Decode_Field(parts[1])
-            description = Decode_Field(parts[2])
-            completed = parts[3] == "1"
+            title = Underscore_To_Space(parts[1])
+            completed = parts[2] == "1"
 
             tasks.append(
                 {
                     "title": title,
-                    "description": description,
                     "completed": completed,
                     "owner": owner,
                 }
@@ -108,10 +117,9 @@ def Save_Tasks(tasks):
     with open("Tasks.txt", "w", encoding="utf-8") as text_file:
         for task in tasks:
             owner = task["owner"]
-            title = Encode_Field(task["title"])
-            description = Encode_Field(task["description"])
+            title = Space_To_Underscore(task["title"])
             completed = "1" if task["completed"] else "0"
-            text_file.write(f"{owner} {title} {description} {completed}\n")
+            text_file.write(f"{owner} {title} {completed}\n")
 
 
 def Get_User_Tasks(tasks, current_user):
@@ -120,44 +128,42 @@ def Get_User_Tasks(tasks, current_user):
 
 def Print_User_Tasks(user_tasks):
     if len(user_tasks) == 0:
-        print("\nNo tasks\n")
+        Print_Error("No tasks found.")
         return
 
     print("")
     for i in range(0, len(user_tasks), 1):
-        checkBox = "[✔ ]" if user_tasks[i]["completed"] else "[ ]"
-        print(f"{i + 1}. {checkBox} {user_tasks[i]['title']}")
+        check_box = "[✔]" if user_tasks[i]["completed"] else "[ ]"
+        print(f"{i + 1}. {check_box} {user_tasks[i]['title']}")
     print("")
 
 
 def Add_Task(current_user):
-    print("\n--- Add task ---")
+    Print_Header("Add Task")
     title = input("Enter title: ").strip()
-    description = input("Enter description: ").strip()
 
     if not title:
-        print("\nTitle cannot be empty\n")
+        Print_Error("Title cannot be empty.")
         return
 
     tasks = Load_Tasks()
     tasks.append(
         {
             "title": title,
-            "description": description,
             "completed": False,
             "owner": current_user,
         }
     )
     Save_Tasks(tasks)
 
-    print("\nTask added\n")
+    print("Task added successfully.")
 
 
 def View_My_Tasks(current_user):
     tasks = Load_Tasks()
     user_tasks = Get_User_Tasks(tasks, current_user)
 
-    print("\n--- My tasks ---")
+    Print_Header("My Tasks")
     Print_User_Tasks(user_tasks)
 
 
@@ -165,7 +171,7 @@ def Mark_Task_Complete(current_user):
     tasks = Load_Tasks()
     user_tasks = Get_User_Tasks(tasks, current_user)
 
-    print("\n--- Mark task as complete ---")
+    Print_Header("Mark Task as Complete")
     Print_User_Tasks(user_tasks)
 
     if len(user_tasks) == 0:
@@ -174,10 +180,14 @@ def Mark_Task_Complete(current_user):
     task_choice = Get_Option(1, len(user_tasks))
     selected_task = user_tasks[task_choice - 1]
 
+    if selected_task["completed"]:
+        Print_Error("That task is already marked as complete.")
+        return
+
     selected_task["completed"] = True
     Save_Tasks(tasks)
 
-    print("\nTask marked as complete\n")
+    print("Task marked as complete.")
 
 
 def Run_Task_Menu(current_user):
@@ -192,12 +202,12 @@ def Run_Task_Menu(current_user):
         elif option == 3:
             Mark_Task_Complete(current_user)
         else:
-            print("\nLogged out.\n")
+            print("Logged out.")
             return
 
 
 def Register_User():
-    print("\n--- Register ---")
+    Print_Header("Register")
     username = Get_Username()
     password = Get_Password()
 
@@ -209,17 +219,18 @@ def Register_User():
             line = line.strip()
             if not line:
                 continue
-            existingUsername = line.split(" ", 1)[0]
-            if existingUsername == username:
-                print("\nThat username already exists. Choose another.\n")
+            existing_username = line.split(" ", 1)[0]
+            if existing_username == username:
+                Print_Error("That username already exists. Choose another.")
                 return
+
         text_file.write(f"{username} {password}\n")
 
-    print("\nUser registered\n")
+    print("User registered successfully.")
 
 
 def Login_User():
-    print("\n--- Login ---")
+    Print_Header("Login")
     username = Get_Username()
     password = Get_Password()
 
@@ -230,22 +241,23 @@ def Login_User():
             line = line.strip()
             if not line:
                 continue
+
             parts = line.split(" ", 1)
             if len(parts) != 2:
                 continue
 
-            lineUsername = parts[0]
-            linePassword = parts[1]
+            line_username = parts[0]
+            line_password = parts[1]
 
-            if lineUsername == username:
-                if linePassword != password:
-                    print("\nWrong password\n")
+            if line_username == username:
+                if line_password != password:
+                    Print_Error("Wrong password.")
                     return None
-                else:
-                    print(f"\nLogged in as {username}\n")
-                    return username
 
-    print("\nUser not found\n")
+                print(f"Logged in as {username}.")
+                return username
+
+    Print_Error("User not found.")
     return None
 
 
@@ -253,6 +265,7 @@ running = True
 while running:
     Display_Menu()
     option = Get_Option(1, 3)
+
     if option == 1:
         Register_User()
     elif option == 2:
@@ -260,5 +273,5 @@ while running:
         if current_user is not None:
             Run_Task_Menu(current_user)
     else:
-        print("\nGoodbye.\n")
+        print("Goodbye.")
         running = False
